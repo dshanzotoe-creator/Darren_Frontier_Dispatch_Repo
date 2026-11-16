@@ -16,6 +16,8 @@ namespace FrontierDispatch.Core
     public sealed class DijkstraRouteFinder
     {
         private readonly WorldData _world;
+        private readonly WorldQueries _queries;
+
 
         /// <summary>
         /// Constructor. Creates a route finder operating on the supplied world.
@@ -23,6 +25,7 @@ namespace FrontierDispatch.Core
         public DijkstraRouteFinder(WorldData world)
         {
             _world = world ?? throw new ArgumentNullException(nameof(world));
+            _queries = new WorldQueries(_world);
         }
 
         /// <summary>
@@ -36,22 +39,71 @@ namespace FrontierDispatch.Core
         {
             // TODO: implement Dijkstra using your prepared world representation
             // and MinPriorityQueue<T>.
-             
+
+            if (_queries.FindLocationById(startLocationId) == null || _queries.FindLocationById(goalLocationId) == null)
+            {
+                return new RouteResult(false, Array.Empty<int>(), 0, 0);
+            }
+
+            if (startLocationId == goalLocationId)
+            {
+                return new RouteResult(true, new[] { startLocationId }, 0, 0);
+            }
+
             var bestCost = new Dictionary<int, int>();
             var cameFrom = new Dictionary<int, int>();
             MinPriorityQueue<int> frontier = new();
+            HashSet<int> finalized = new();
+            int expandedCount = 0;
 
             bestCost[startLocationId] = 0;
             frontier.Enqueue(startLocationId, 0);
+
 
 
             while(frontier.Count > 0)
             {
                 int current =  frontier.Dequeue();
 
+                if (!finalized.Add(current))
+                    continue;
+
+                expandedCount++;
+
+                if (current == goalLocationId)
+                {
+                    List<int> route = new();
+                    route.Add(current);
+
+                    while (current != startLocationId)
+                    {
+                        current = cameFrom[current];
+                        route.Add(current);
+                    }
+
+                    route.Reverse();
+
+                    return new RouteResult(true, route, bestCost[goalLocationId], expandedCount);
+                }
+
+                foreach (Connection connection in _queries.FindOutgoingConnections(current))
+                {
+                    int candidateCost = bestCost[current] + connection.TravelCost;
+
+                    if (!bestCost.TryGetValue(connection.ToLocationId, out int knownCost) || candidateCost < knownCost)
+                    {
+                        bestCost[connection.ToLocationId] = candidateCost;
+                        cameFrom[connection.ToLocationId] = current;
+
+                        frontier.Enqueue(connection.ToLocationId, candidateCost);
+                    }
+
+                 
+                }
             }
+
+            return new RouteResult(false, Array.Empty<int>(), 0, expandedCount);
           
-            throw new NotImplementedException();
         }
     }
 }
