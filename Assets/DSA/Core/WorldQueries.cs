@@ -19,38 +19,43 @@ namespace FrontierDispatch.Core
     {
         private readonly WorldData _world;
 
+        private readonly Dictionary<int, List<Connection>> _outgoingByLocation = new();
+
+        private readonly Dictionary<int, Location> _locationById = new();
+
         public WorldQueries(WorldData world)
         {
             _world = world ?? throw new ArgumentNullException(nameof(world));
+
+            foreach(Location location in _world.Locations)
+            {
+                _outgoingByLocation.Add(location.Id, new List<Connection>());
+                _locationById.Add(location.Id, location);
+            }
+
+            foreach(Connection connection in _world.Connections)
+            {
+                _outgoingByLocation[connection.FromLocationId].Add(connection);
+            }
         }
 
         public Location? FindLocationById(int id)
         {
-            for (int i = 0; i < _world.Locations.Count; ++i)
-            {
-                Location location = _world.Locations[i];
-                if (location.Id == id)
-                {
-                    return location;
-                }
-            }
+            if(_locationById.TryGetValue(id, out var location))
+                return location;
 
             return null;
         }
 
         public IReadOnlyList<Connection> FindOutgoingConnections(int fromLocationId)
         {
-            var result = new List<Connection>();
-            for (int i = 0; i < _world.Connections.Count; ++i)
+            if (_outgoingByLocation.TryGetValue(fromLocationId, out var connections))
             {
-                Connection connection = _world.Connections[i];
-                if (connection.FromLocationId == fromLocationId)
-                {
-                    result.Add(connection);
-                }
+                 return connections;
             }
 
-            return result;
+            return Array.Empty<Connection>();
+            
         }
     }
 }

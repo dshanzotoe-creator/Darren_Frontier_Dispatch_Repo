@@ -31,7 +31,10 @@ namespace FrontierDispatch.Core
         public void Enqueue(T item, int priority)
         {
             // TODO: insert the new entry and restore the min-heap invariant.
-            throw new NotImplementedException();
+            _heap.Add(new Entry(item, priority));
+
+            
+            SiftUp(Count - 1);
         }
 
         /// <summary>
@@ -43,6 +46,14 @@ namespace FrontierDispatch.Core
         public T Peek()
         {
             // TODO: return the current minimum without changing the queue.
+
+            if(Count == 0)
+            {
+                throw new InvalidOperationException("There are no items in the heap."); 
+            }
+
+            return _heap[0].Item;
+
             throw new NotImplementedException();
         }
 
@@ -55,9 +66,65 @@ namespace FrontierDispatch.Core
         public T Dequeue()
         {
             // TODO: remove the minimum item and restore the min-heap invariant.
-            throw new NotImplementedException();
+
+            if (Count == 0)
+            {
+                throw new InvalidOperationException("There are no items in the heap.");
+            }
+
+            T originalItem = _heap[0].Item;
+
+            (_heap[0], _heap[Count - 1]) = (_heap[Count - 1], _heap[0]);
+
+            _heap.RemoveAt(Count - 1);
+
+            if(Count > 0)         
+                SiftDown(0);         
+
+            return originalItem;
         }
 
+
+        public void SiftUp(int index)
+        {
+
+            while (index > 0)
+            {
+                int parentIndex = (index - 1) / 2;
+
+                if (_heap[index].Priority >= _heap[parentIndex].Priority)
+                    break;
+
+                (_heap[index], _heap[parentIndex]) = (_heap[parentIndex], _heap[index]); 
+
+
+                index = parentIndex;
+            }
+        }
+
+        public void SiftDown(int index)
+        {
+            while (true)
+            {
+                int leftIndex = 2 * index + 1; 
+                int rightIndex = 2 * index + 2;
+                int smallest = index; 
+
+                if(leftIndex < Count && _heap[leftIndex].Priority < _heap[smallest].Priority)
+                    smallest = leftIndex;
+
+                if(rightIndex < Count && _heap[rightIndex].Priority < _heap[smallest].Priority)
+                    smallest = rightIndex;
+
+                if (smallest == index)
+                    break;
+
+                (_heap[index], _heap[smallest]) = (_heap[smallest], _heap[index]);
+
+
+                index = smallest; 
+            }
+        }
         /// <summary>
         /// Stores one item together with the priority used by the heap.
         /// </summary>

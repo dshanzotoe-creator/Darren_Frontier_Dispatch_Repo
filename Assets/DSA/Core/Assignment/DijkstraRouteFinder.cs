@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace FrontierDispatch.Core
 {
@@ -35,6 +36,20 @@ namespace FrontierDispatch.Core
         {
             // TODO: implement Dijkstra using your prepared world representation
             // and MinPriorityQueue<T>.
+             
+            var bestCost = new Dictionary<int, int>();
+            var cameFrom = new Dictionary<int, int>();
+            MinPriorityQueue<int> frontier = new();
+
+            bestCost[startLocationId] = 0;
+            frontier.Enqueue(startLocationId, 0);
+
+
+            while(frontier.Count > 0)
+            {
+                int current =  frontier.Dequeue();
+            }
+          
             throw new NotImplementedException();
         }
     }

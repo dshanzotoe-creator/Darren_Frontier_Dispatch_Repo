@@ -51,7 +51,7 @@ static void RunBaseline()
     Console.WriteLine($"Locations: {world.Locations.Count}");
     Console.WriteLine($"Connections: {world.Connections.Count}");
     Console.WriteLine($"Iterations: {iterations}");
-    Console.WriteLine($"Elapsed: {sw.ElapsedMilliseconds} ms");
+    Console.WriteLine($"Elapsed: {sw.Elapsed.TotalMilliseconds:F4} ms");
     Console.WriteLine($"Checksum: {checksum}");
     Console.WriteLine("Absolute time varies by machine. Keep this result for before/after comparison.");
 }
