@@ -20,6 +20,7 @@ namespace FrontierDispatch.Core
     public sealed class ReachabilityQuery
     {
         private readonly WorldData _world;
+        private readonly WorldQueries _queries;
 
         /// <summary>
         /// Creates a reachability query operating on the supplied world.
@@ -27,6 +28,7 @@ namespace FrontierDispatch.Core
         public ReachabilityQuery(WorldData world)
         {
             _world = world ?? throw new ArgumentNullException(nameof(world));
+            _queries = new WorldQueries(_world);
         }
 
         /// <summary>
@@ -38,8 +40,54 @@ namespace FrontierDispatch.Core
         /// </summary>
         public IReadOnlyDictionary<int, int> FindReachable(int startLocationId, int maxTravelCost)
         {
-            // TODO: adapt shortest-path reasoning to the travel-cost budget.
-            throw new NotImplementedException();
+            if (_queries.FindLocationById(startLocationId) == null)
+            {
+                return new Dictionary<int, int>();
+            }
+
+            if (maxTravelCost < 0)
+            {
+                return new Dictionary<int, int>();
+            }
+
+
+            var bestCost = new Dictionary<int, int>();
+            MinPriorityQueue<int> frontier = new();
+            HashSet<int> finalized = new();
+
+            bestCost[startLocationId] = 0;
+            frontier.Enqueue(startLocationId, 0);
+
+            while(frontier.Count > 0)
+            {
+                // TODO: adapt shortest-path reasoning to the travel-cost budget.
+                int current = frontier.Dequeue();
+
+                if (!finalized.Add(current))
+                    continue;
+
+
+                foreach (Connection connection in _queries.FindOutgoingConnections(current))
+                {
+                    int candidateCost = bestCost[current] + connection.TravelCost;
+
+                    if (candidateCost > maxTravelCost)
+                    {
+                        continue;
+                    }
+
+                    if (!bestCost.TryGetValue(connection.ToLocationId, out int knownCost) || candidateCost < knownCost)
+                    {
+                        bestCost[connection.ToLocationId] = candidateCost;
+                        frontier.Enqueue(connection.ToLocationId, candidateCost);
+                    }
+
+
+                }
+            }
+
+            return bestCost;
+
         }
     }
 }
