@@ -48,6 +48,7 @@ namespace FrontierDispatch.Core
             while(frontier.Count > 0)
             {
                 int current =  frontier.Dequeue();
+
             }
           
             throw new NotImplementedException();
