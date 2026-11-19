@@ -19,39 +19,95 @@ Console.WriteLine($"Find 734: {queries.FindLocationById(734)?.Name ?? "missing"}
 Console.WriteLine();
 Console.WriteLine("Run with --baseline to record the supplied baseline workload.");
 
+
 static void RunBaseline()
 {
-    // Build the dataset before timing the repeated runtime queries.
-    // This baseline therefore measures query work, not world construction.
+    // Create the world BEFORE measuring WorldQueries.
     WorldData world = WorldDatasetFactory.CreateMedium();
-    var queries = new WorldQueries(world);
-
-    // The checksum provides a stable sanity check that the workload still
-    // produces equivalent results after implementation changes.
-    int checksum = 0;
 
     const int iterations = 5000;
 
-    var sw = Stopwatch.StartNew();
+    // ------------------------------------
+    // 1. MEASURE PREPARATION
+    // ------------------------------------
+
+    var prepTimer = new Stopwatch();
+
+    long prepBefore = GC.GetAllocatedBytesForCurrentThread();
+
+    prepTimer.Start();
+
+    var queries = new WorldQueries(world);
+
+    prepTimer.Stop();
+
+    long prepAllocated =
+        GC.GetAllocatedBytesForCurrentThread() - prepBefore;
+
+    // ------------------------------------
+    // 2. WARM UP QUERY METHODS
+    // ------------------------------------
+
+    // Avoid including initial JIT compilation in
+    // the measured repeated-query workload.
+    for (int i = 0; i < 10; i++)
+    {
+        queries.FindLocationById(i);
+        queries.FindOutgoingConnections(i);
+    }
+
+    // ------------------------------------
+    // 3. MEASURE RUNTIME QUERIES
+    // ------------------------------------
+
+    int checksum = 0;
+
+    var queryTimer = new Stopwatch();
+
+    long queryBefore = GC.GetAllocatedBytesForCurrentThread();
+
+    queryTimer.Start();
 
     for (int i = 0; i < iterations; ++i)
     {
-        // Deterministically visit many different location IDs rather than
-        // repeatedly querying the same location.
         int id = (i * 997) % world.Locations.Count;
 
         Location? location = queries.FindLocationById(id);
+
         checksum += location?.Id ?? 0;
         checksum += queries.FindOutgoingConnections(id).Count;
     }
 
-    sw.Stop();
+    queryTimer.Stop();
 
-    Console.WriteLine("Baseline world-query workload");
+    long queryAllocated =
+        GC.GetAllocatedBytesForCurrentThread() - queryBefore;
+
+    // ------------------------------------
+    // 4. PRINT RESULTS
+    // ------------------------------------
+
+    Console.WriteLine("WorldQueries Performance Investigation");
+    Console.WriteLine("--------------------------------------");
+
     Console.WriteLine($"Locations: {world.Locations.Count}");
     Console.WriteLine($"Connections: {world.Connections.Count}");
     Console.WriteLine($"Iterations: {iterations}");
-    Console.WriteLine($"Elapsed: {sw.Elapsed.TotalMilliseconds:F4} ms");
+
+    Console.WriteLine();
+
+    Console.WriteLine("PREPARATION");
+    Console.WriteLine($"Time: {prepTimer.Elapsed.TotalMilliseconds:F4} ms");
+    Console.WriteLine($"Allocated: {prepAllocated:N0} bytes");
+
+    Console.WriteLine();
+
+    Console.WriteLine("RUNTIME QUERIES");
+    Console.WriteLine($"Total time: {queryTimer.Elapsed.TotalMilliseconds:F4} ms");
+    Console.WriteLine($"Average per iteration: {queryTimer.Elapsed.TotalMilliseconds / iterations:F6} ms");
+    Console.WriteLine($"Allocated: {queryAllocated:N0} bytes");
+
+    Console.WriteLine();
+
     Console.WriteLine($"Checksum: {checksum}");
-    Console.WriteLine("Absolute time varies by machine. Keep this result for before/after comparison.");
 }

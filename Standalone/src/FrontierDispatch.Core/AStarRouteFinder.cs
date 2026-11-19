@@ -24,16 +24,11 @@ namespace FrontierDispatch.Core
 
             foreach (Connection connection in world.Connections)
             {
-                Location from = _queries.FindLocationById(
-                    connection.FromLocationId)
-                    ?? throw new ArgumentException("Unknown connection origin.");
+                Location from = _queries.FindLocationById(connection.FromLocationId) ?? throw new ArgumentException("Unknown connection origin.");
 
-                Location to = _queries.FindLocationById(
-                    connection.ToLocationId)
-                    ?? throw new ArgumentException("Unknown connection destination.");
+                Location to = _queries.FindLocationById(connection.ToLocationId) ?? throw new ArgumentException("Unknown connection destination.");
 
-                double distance = ManhattanDistance(
-                    from.Position, to.Position);
+                double distance = ManhattanDistance(from.Position, to.Position);
 
                 if (distance > 0)
                 {
@@ -44,15 +39,11 @@ namespace FrontierDispatch.Core
 
             // A zero heuristic is safe if no usable
             // geometric cost bound exists.
-            _minCostPerUnit = double.IsPositiveInfinity(minRate)
-                ? 0
-                : minRate;
+            _minCostPerUnit = double.IsPositiveInfinity(minRate) ? 0 : minRate;
         }
 
         // Manhattan distance between two coordinates.
-        private static double ManhattanDistance(
-            WorldPosition from,
-            WorldPosition goal)
+        private static double ManhattanDistance(WorldPosition from, WorldPosition goal)
         {
             double xDistance = Math.Abs((double)from.X - goal.X);
             double yDistance = Math.Abs((double)from.Y - goal.Y);
@@ -61,23 +52,17 @@ namespace FrontierDispatch.Core
         }
 
         // Retrieve the positions and calculate their distance.
-        private double GetDistanceToGoal(
-            int locationId,
-            int goalLocationId)
+        private double GetDistanceToGoal(int locationId, int goalLocationId)
         {
-            Location location = _queries.FindLocationById(locationId)
-                ?? throw new ArgumentException("Unknown location.");
+            Location location = _queries.FindLocationById(locationId) ?? throw new ArgumentException("Unknown location.");
 
-            Location goal = _queries.FindLocationById(goalLocationId)
-                ?? throw new ArgumentException("Unknown goal.");
+            Location goal = _queries.FindLocationById(goalLocationId) ?? throw new ArgumentException("Unknown goal.");
 
             return ManhattanDistance(location.Position, goal.Position);
         }
 
         // Estimate the remaining travel cost: h(n).
-        private int EstimateRemainingCost(
-            int locationId,
-            int goalLocationId)
+        private int EstimateRemainingCost(int locationId, int goalLocationId)
         {
             double distance = GetDistanceToGoal(
                 locationId, goalLocationId);
@@ -88,15 +73,9 @@ namespace FrontierDispatch.Core
         }
 
         // Ordinary A* without restrictions.
-        public RouteResult FindRoute(
-            int startLocationId,
-            int goalLocationId)
+        public RouteResult FindRoute( int startLocationId, int goalLocationId)
         {
-            return FindRoute(
-                startLocationId,
-                goalLocationId,
-                null,
-                null);
+            return FindRoute(startLocationId, goalLocationId, null, null);
         }
 
         // A* with optional traversal constraints.
@@ -106,10 +85,7 @@ namespace FrontierDispatch.Core
 
             HashSet<(int From, int To)> blockedEdges = blockedConnections == null? new HashSet<(int From, int To)>() : new HashSet<(int From, int To)>(blockedConnections);
 
-            if (_queries.FindLocationById(startLocationId) == null ||
-                _queries.FindLocationById(goalLocationId) == null ||
-                blockedLocations.Contains(startLocationId) ||
-                blockedLocations.Contains(goalLocationId))
+            if (_queries.FindLocationById(startLocationId) == null || _queries.FindLocationById(goalLocationId) == null || blockedLocations.Contains(startLocationId) || blockedLocations.Contains(goalLocationId))
             {
                 return new RouteResult(false, Array.Empty<int>(), 0, 0);
             }
